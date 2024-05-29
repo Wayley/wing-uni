@@ -1,6 +1,6 @@
 {
   "name": "@wing-uni/logger",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "wing uniapp file system",
   "keywords": [
     "wing",
@@ -36,6 +36,7 @@
   "dependencies": {
     "@wing-logger/logger": "^0.0.3",
     "@wing-tool/date-tool": "^0.0.3",
+    "@wing-uni/file-system": "^0.0.1",
     "@wing-uni/logger": "^0.0.1"
   }
 }
