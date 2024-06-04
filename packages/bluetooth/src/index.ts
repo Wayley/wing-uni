@@ -1,185 +1,215 @@
-export type BluetoothResponseBase = {
+export type BluetoothResponse<T> = {
+  /**
+   * 方法调用是否成功
+   */
   succeed: boolean;
+
+  /**
+   * 方法调用成功/失败码
+   */
   code?: number;
+
+  /**
+   * 方法调用成功/失败信息
+   */
   message?: string;
+
+  /**
+   * 方法调用成功返回的数据
+   */
+  data?: T;
 };
-export type BluetoothAdapterStateResult = {
-  discovering: boolean;
-  available: boolean;
-};
-export type GetBluetoothAdapterStateResult = BluetoothResponseBase & {
-  data?: BluetoothAdapterStateResult;
+export type StartScanOptions = {
+  /**
+   * 要搜索的蓝牙设备主 service 的 uuid 列表
+   */
+  services?: string[];
+
+  /**
+   * 是否允许重复上报同一设备
+   * 默认为 false
+   */
+  allowDuplicatesKey?: boolean;
+
+  /**
+   * 上报设备的间隔。0 表示找到新设备立即上报，其他数值根据传入的间隔上报。
+   * 默认为 0
+   */
+  interval?: number;
+
+  /**
+   * 扫描模式，越高扫描越快，也越耗电
+   * 默认为 PowerLevel.Medium
+   */
+  powerLevel?: PowerLevel;
 };
 export enum PowerLevel {
   Low = 'low',
   Medium = 'medium',
   High = 'high',
 }
-export type StartBluetoothDevicesDiscoveryOptions = {
-  services?: string[];
-  allowDuplicatesKey?: boolean;
-  interval?: number;
-  powerLevel?: PowerLevel;
+export type OnDeviceFoundCallback = (result: OnDeviceFoundResult) => void;
+export type OnDeviceFoundResult = {
+  devices: DeviceInfo[];
 };
-export type GetConnectedBluetoothDevicesResult = BluetoothResponseBase & {
-  data?: UniNamespace.GetConnectedBluetoothDevicesSuccessData[];
+export type DeviceInfo = {
+  /**
+   * 蓝牙设备名称，某些设备可能没有
+   */
+  name: string;
+
+  /**
+   * 用于区分设备的 id
+   */
+  deviceId: string;
+
+  /**
+   * 当前蓝牙设备的信号强度
+   */
+  RSSI: number;
+
+  /**
+   * 当前蓝牙设备的广播数据段中的ManufacturerData数据段
+   */
+  advertisData: ArrayBuffer;
+
+  /**
+   * 当前蓝牙设备的广播数据段中的ServiceUUIDs数据段
+   */
+  advertisServiceUUIDs: string[];
+
+  /**
+   * 当前蓝牙设备的广播数据段中的LocalName数据段
+   */
+  localName: string; // Object
+
+  /**
+   * 当前蓝牙设备的广播数据段中的ServiceData数据段
+   */
+  serviceData: Object;
 };
-export type GetBluetoothDevicesResult = BluetoothResponseBase & {
-  data?: UniNamespace.BluetoothDeviceInfo[];
+export type OnAdapterStateChangeCallback = (result: OnAdapterStateChangeResult) => void;
+export type OnAdapterStateChangeResult = {
+  /**
+   * 是否正在搜索设备
+   */
+  discovering: boolean;
+
+  /**
+   * 蓝牙适配器是否可用
+   */
+  available: boolean;
 };
-class Bluetooth {
-  private static instance: Bluetooth | null = null;
+export type GetConnectedDevicesOptions = {
+  services: string[];
+};
+export type ConnectedDeviveInfo = {
+  /**
+   * 蓝牙设备名称，某些设备可能没有
+   */
+  name: string;
+
+  /**
+   * 用于区分设备的 id
+   */
+  deviceId: string;
+};
+export type GetAdapterStateResult = {
+  /**
+   * 是否正在搜索设备
+   */
+  discovering: boolean;
+
+  /**
+   * 蓝牙适配器是否可用
+   */
+  available: boolean;
+};
+export interface IUniBluetooth {
+  openBluetoothAdapter(): Promise<BluetoothResponse<null>>;
+  startBluetoothDevicesDiscovery(options: StartScanOptions): Promise<BluetoothResponse<null>>;
+  onBluetoothDeviceFound(callback: OnDeviceFoundCallback): void;
+  stopBluetoothDevicesDiscovery(): Promise<BluetoothResponse<null>>;
+  onBluetoothAdapterStateChange(callback: OnAdapterStateChangeCallback): void;
+  getConnectedBluetoothDevices(options: GetConnectedDevicesOptions): Promise<BluetoothResponse<ConnectedDeviveInfo[]>>;
+  getBluetoothDevices(): Promise<BluetoothResponse<DeviceInfo[]>>;
+  getBluetoothAdapterState(): Promise<BluetoothResponse<GetAdapterStateResult>>;
+  closeBluetoothAdapter(): Promise<BluetoothResponse<null>>;
+}
+export class UniBluetooth implements IUniBluetooth {
+  private static instance: UniBluetooth | null = null;
   constructor() {}
-  public static getInstance(): Bluetooth {
+  static getInstance(): UniBluetooth {
     if (this.instance == null) {
-      this.instance = new Bluetooth();
+      this.instance = new UniBluetooth();
     }
-    return this.instance!;
+    return this.instance;
   }
-  openBluetoothAdapter(): Promise<BluetoothResponseBase> {
+  openBluetoothAdapter(): Promise<BluetoothResponse<null>> {
     return new Promise((resolve) => {
       uni.openBluetoothAdapter({
         success: ({ errMsg }) => resolve({ succeed: true, message: errMsg }),
-        fail: ({ code, errMsg }) => resolve({ succeed: false, code, message: errMsg }),
+        fail: ({ code, errMsg }) => resolve({ succeed: false, message: errMsg, code }),
       });
     });
   }
-  closeBluetoothAdapter(): Promise<BluetoothResponseBase> {
-    return new Promise((resolve) => {
-      uni.closeBluetoothAdapter({
-        success: ({ errMsg }) => resolve({ succeed: true, message: errMsg }),
-        fail: ({ code, errMsg }) => resolve({ succeed: false, code, message: errMsg }),
-      });
-    });
-  }
-  getBluetoothAdapterState(): Promise<GetBluetoothAdapterStateResult> {
-    return new Promise((resolve) => {
-      uni.getBluetoothAdapterState({
-        success: ({ errMsg, available, discovering }) => resolve({ succeed: true, message: errMsg, data: { available, discovering } }),
-        fail: ({ code, errMsg }) => resolve({ succeed: false, code, message: errMsg }),
-      });
-    });
-  }
-  startBluetoothDevicesDiscovery(options?: StartBluetoothDevicesDiscoveryOptions): Promise<BluetoothResponseBase> {
+  startBluetoothDevicesDiscovery(options: StartScanOptions): Promise<BluetoothResponse<null>> {
     return new Promise((resolve) => {
       uni.startBluetoothDevicesDiscovery({
         ...options,
         success: ({ errMsg }) => resolve({ succeed: true, message: errMsg }),
-        fail: ({ code, errMsg }) => resolve({ succeed: false, code, message: errMsg }),
+        fail: ({ code, errMsg }) => resolve({ succeed: false, message: errMsg, code }),
       });
     });
   }
-  stopBluetoothDevicesDiscovery(): Promise<BluetoothResponseBase> {
+  onBluetoothDeviceFound(callback: OnDeviceFoundCallback): void {
+    uni.onBluetoothDeviceFound((result: unknown) => {
+      callback(result as OnDeviceFoundResult);
+    });
+  }
+  stopBluetoothDevicesDiscovery(): Promise<BluetoothResponse<null>> {
     return new Promise((resolve) => {
       uni.stopBluetoothDevicesDiscovery({
         success: ({ errMsg }) => resolve({ succeed: true, message: errMsg }),
-        fail: ({ code, errMsg }) => resolve({ succeed: false, code, message: errMsg }),
+        fail: ({ code, errMsg }) => resolve({ succeed: false, message: errMsg, code }),
       });
     });
   }
-  getConnectedBluetoothDevices(services: string[]): Promise<GetConnectedBluetoothDevicesResult> {
+  onBluetoothAdapterStateChange(callback: OnAdapterStateChangeCallback): void {
+    uni.onBluetoothAdapterStateChange(callback);
+  }
+  getConnectedBluetoothDevices(options: GetConnectedDevicesOptions): Promise<BluetoothResponse<ConnectedDeviveInfo[]>> {
     return new Promise((resolve) => {
       uni.getConnectedBluetoothDevices({
-        services,
+        ...options,
         success: ({ errMsg, devices }) => resolve({ succeed: true, message: errMsg, data: devices }),
-        fail: ({ code, errMsg }) => resolve({ succeed: false, code, message: errMsg }),
+        fail: ({ code, errMsg }) => resolve({ succeed: false, message: errMsg, code }),
       });
     });
   }
-  getBluetoothDevices(): Promise<GetBluetoothDevicesResult> {
+  getBluetoothDevices(): Promise<BluetoothResponse<DeviceInfo[]>> {
     return new Promise((resolve) => {
       uni.getBluetoothDevices({
-        success: ({ errMsg, devices }) => resolve({ succeed: true, message: errMsg, data: devices }),
-        fail: ({ code, errMsg }) => resolve({ succeed: false, code, message: errMsg }),
+        success: ({ errMsg, devices }: { errMsg: string; devices: unknown }) => resolve({ succeed: true, message: errMsg, data: devices as DeviceInfo[] }),
+        fail: ({ code, errMsg }) => resolve({ succeed: false, message: errMsg, code }),
       });
     });
   }
-  onBluetoothAdapterStateChange(callback: (result: UniNamespace.OnBluetoothAdapterStateChangeResult) => void): void {
-    return uni.onBluetoothAdapterStateChange(callback);
-  }
-  onBluetoothDeviceFound(callback: (result: UniNamespace.OnBluetoothDeviceFoundResult) => void): void {
-    return uni.onBluetoothDeviceFound(callback);
-  }
-}
-function getOS() {
-  const os = uni.getSystemInfoSync()?.osName;
-  return {
-    isIOS: os == 'ios',
-    isAndroid: os == 'android',
-  };
-}
-export interface IBluetoothController {
-  openAdapter(): Promise<BluetoothResponseBase>;
-  closeAdapter(): Promise<BluetoothResponseBase>;
-  getAdapterState(): Promise<GetBluetoothAdapterStateResult>;
-  startScan(options?: StartBluetoothDevicesDiscoveryOptions): Promise<BluetoothResponseBase>;
-  stopScan(): Promise<BluetoothResponseBase>;
-  getConnectedDevices(services?: string[]): Promise<GetConnectedBluetoothDevicesResult>;
-  getDevices(services?: string[]): Promise<GetBluetoothDevicesResult>;
-  onAdapterStateChange(callback: (result: UniNamespace.OnBluetoothAdapterStateChangeResult) => void): void;
-  onDeviceFound(callback: (device: UniNamespace.BluetoothDeviceInfo) => void): void;
-  onDevicesFound(callback: (devices: UniNamespace.BluetoothDeviceInfo[]) => void): void;
-}
-export class BluetoothController implements IBluetoothController {
-  private bluetooth: Bluetooth;
-  private services: string[];
-  constructor(services?: string[]) {
-    this.bluetooth = Bluetooth.getInstance();
-    this.services = services ?? [];
-  }
-  public openAdapter(): Promise<BluetoothResponseBase> {
-    return this.bluetooth.openBluetoothAdapter();
-  }
-  public closeAdapter(): Promise<BluetoothResponseBase> {
-    return this.bluetooth.closeBluetoothAdapter();
-  }
-  public getAdapterState(): Promise<GetBluetoothAdapterStateResult> {
-    return this.bluetooth.getBluetoothAdapterState();
-  }
-  public startScan(options?: StartBluetoothDevicesDiscoveryOptions): Promise<BluetoothResponseBase> {
-    options = options ?? { services: this.services };
-    const { isIOS } = getOS();
-    if (isIOS) {
-      options.services = [];
-      // Or
-      // delete options.services
-    }
-    return this.bluetooth.startBluetoothDevicesDiscovery(options);
-  }
-  public stopScan(): Promise<BluetoothResponseBase> {
-    return this.bluetooth.stopBluetoothDevicesDiscovery();
-  }
-  public getConnectedDevices(services?: string[]): Promise<GetConnectedBluetoothDevicesResult> {
-    services = services ?? this.services;
-    return this.bluetooth.getConnectedBluetoothDevices(services);
-  }
-  public async getDevices(services?: string[]): Promise<GetBluetoothDevicesResult> {
-    services = services ?? this.services;
-    const { succeed, data, ...rest } = await this.bluetooth.getBluetoothDevices();
-    let _data: UniNamespace.BluetoothDeviceInfo[] | undefined = data;
-    if (services && services.length > 0 && succeed && data && data.length > 0) {
-      _data = data.filter(({ advertisServiceUUIDs }) => advertisServiceUUIDs.filter((o) => services.indexOf(o) > -1).length > 0);
-    }
-    return Promise.resolve({ succeed, ...rest, data: _data });
-  }
-  public onAdapterStateChange(callback: (result: UniNamespace.OnBluetoothAdapterStateChangeResult) => void): void {
-    return this.bluetooth.onBluetoothAdapterStateChange(callback);
-  }
-  public onDeviceFound(callback: (device: UniNamespace.BluetoothDeviceInfo) => void): void {
-    return this.bluetooth.onBluetoothDeviceFound(({ devices }: UniNamespace.OnBluetoothDeviceFoundResult) => {
-      if (devices && devices.length > 0) {
-        callback(devices[0]!);
-      }
+  getBluetoothAdapterState(): Promise<BluetoothResponse<GetAdapterStateResult>> {
+    return new Promise((resolve) => {
+      uni.getBluetoothAdapterState({
+        success: ({ errMsg, discovering, available }) => resolve({ succeed: true, message: errMsg, data: { discovering, available } }),
+        fail: ({ code, errMsg }) => resolve({ succeed: false, message: errMsg, code }),
+      });
     });
   }
-  public onDevicesFound(callback: (devices: UniNamespace.BluetoothDeviceInfo[]) => void): void {
-    let devices: UniNamespace.BluetoothDeviceInfo[] = [];
-    return this.onDeviceFound((device) => {
-      if (!devices.find((o) => o.deviceId! == device.deviceId!)) {
-        devices.unshift(device);
-        callback(devices);
-      }
+  closeBluetoothAdapter(): Promise<BluetoothResponse<null>> {
+    return new Promise((resolve) => {
+      uni.closeBluetoothAdapter({
+        success: ({ errMsg }) => resolve({ succeed: true, message: errMsg }),
+        fail: ({ code, errMsg }) => resolve({ succeed: false, message: errMsg, code }),
+      });
     });
   }
 }
-export default BluetoothController;
+export default UniBluetooth;
