@@ -1,6 +1,6 @@
 {
   "name": "@wing-uni/logger",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "wing uniapp file system",
   "keywords": [
     "wing",
@@ -35,7 +35,7 @@
   "homepage": "https://github.com/Wayley/wing-uni/blob/main/packages/logger#readme",
   "dependencies": {
     "@wing-logger/logger": "^0.0.3",
-    "@wing-tool/date-tool": "^0.0.3",
+    "@wing-tool/date-tool": "^0.0.4",
     "@wing-uni/file-system": "^0.0.1",
     "@wing-uni/logger": "^0.0.1"
   }
