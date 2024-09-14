@@ -1,0 +1,39 @@
+{
+  "name": "@wing-uni/permission",
+  "version": "0.0.1",
+  "description": "wing uniapp permission",
+  "keywords": [
+    "wing",
+    "uniapp",
+    "platform permission"
+  ],
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.es.js",
+  "unpkg": "./dist/index.umd.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.es.js",
+      "require": "./dist/index.cjs.js",
+      "browser": "./dist/index.umd.js",
+      "node": "./dist/index.cjs.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Wayley/wing-uni.git",
+    "directory": "packages/permission"
+  },
+  "bugs": {
+    "url": "https://github.com/Wayley/wing-uni/issues"
+  },
+  "homepage": "https://github.com/Wayley/wing-uni/blob/main/packages/permission#readme",
+  "dependencies": {
+    "@wing-uni/system": "^0.0.1"
+  }
+}
